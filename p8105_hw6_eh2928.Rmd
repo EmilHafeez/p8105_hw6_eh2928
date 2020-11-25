@@ -9,10 +9,8 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 #Load relevant libraries
 library(tidyverse)
-library(purrr)
 library(p8105.datasets)
 library(modelr)
-library(mgcv)
 #Prep for neater output
 knitr::opts_chunk$set(
 	fig.width = 6, 
@@ -32,9 +30,25 @@ set.seed(1)
 ```
 
 # Problem One
-```{r}
 
+```{r read in and tidy, message = F}
+homicide_df = 
+  read_csv("data/homicide.csv", na = c("", "NA", "Unknown")) %>% 
+  mutate(
+    city_state = str_c(city, state, sep = ", "),
+    victim_age = as.numeric(victim_age),
+    resolution = case_when(
+      disposition == "Closed without arrest" ~ 0,
+      disposition == "Open/No arrest"        ~ 0,
+      disposition == "Closed by arrest"      ~ 1)
+  ) %>% 
+  filter(
+    victim_race %in% c("White", "Black"),
+    !city_state %in% c("Tulsa, AL", "Dallas, TX", "Phoenix, AZ", "Kansas City, MO")) %>% 
+  select(city_state, resolution, victim_age, victim_race, victim_sex)
 ```
+
+
 
 
 # Problem Two
