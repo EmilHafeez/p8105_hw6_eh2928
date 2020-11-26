@@ -135,7 +135,7 @@ Let's get model comparison working with the two given models
 
 ```{r}
 cv_df = 
-  crossv_mc(birthweight_df, 50) 
+  crossv_mc(birthweight_df, 5) 
 ```
 
 
