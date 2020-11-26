@@ -175,7 +175,7 @@ Let's get model comparison working with the two given models
 
 ```{r cache = TRUE}
 cv_df = 
-  crossv_mc(birthweight_df, 100) %>% 
+  crossv_mc(birthweight_df, 1000) %>% 
   mutate(
     train = map(train, as_tibble),
     test = map(test, as_tibble))
@@ -190,9 +190,11 @@ cv_df =
   cv_df %>% 
   mutate(
     simple_model  = map(train, ~lm(bwt ~ bhead + gaweeks, data = .x)),
+    pw_model = map(train, ~lm(bwt ~ bhead + blength + blength*bhead + babysex + smoken + fincome + momage + bwt_cp, data = .x)),
     complex_model  = map(train, ~lm(bwt ~ bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex +  bhead*blength*babysex, data = .x))) %>% 
   mutate(
     rmse_simple = map2_dbl(simple_model, test, ~rmse(model = .x, data = .y)),
+    rmse_pw = map2_dbl(pw_model, test, ~rmse(model = .x, data = .y)),
     rmse_complex = map2_dbl(complex_model, test, ~rmse(model = .x, data = .y)))
 ```
 
@@ -209,10 +211,6 @@ cv_df %>%
   ggplot(aes(x = model, y = rmse)) + 
   geom_violin()
 ```
-
-
-
-
 
 
 Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
