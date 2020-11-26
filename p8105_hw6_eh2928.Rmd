@@ -31,6 +31,7 @@ set.seed(1)
 
 # Problem One
 
+Read in and tidy
 ```{r read in and tidy, message = F}
 homicide_df = 
   read_csv("data/homicide.csv", na = c("", "NA", "Unknown")) %>% 
@@ -47,6 +48,59 @@ homicide_df =
     !city_state %in% c("Tulsa, AL", "Dallas, TX", "Phoenix, AZ", "Kansas City, MO")) %>% 
   select(city_state, resolution, victim_age, victim_race, victim_sex)
 ```
+
+Start with a regression for just one city.
+
+```{r}
+baltimore_df =
+  homicide_df %>% 
+  filter(city_state == "Baltimore, MD")
+
+glm(resolution ~ victim_age + victim_race + victim_sex, 
+    data = baltimore_df,
+    family = binomial()) %>% 
+  broom::tidy() %>% 
+  mutate(
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * std.error),
+    CI_upper = exp(estimate + 1.96 * std.error)
+  ) %>% 
+  select(term, OR, starts_with("CI")) %>% 
+  knitr::kable(col.names =
+                c("Variable", "Odds Ratio Estimate", "Lower CI", "Upper CI"),
+              align = "cccc", 
+              digits = 3
+              )
+```
+
+Now, let's run this across multiple cities (all of the 47 remaining).
+
+```{r}
+models_results_df = 
+  homicide_df %>% 
+  nest(data = -city_state) %>% 
+  mutate(
+    models = 
+      map(.x = data, ~glm(resolution ~ victim_age + victim_race + victim_sex, data = .x, family = binomial())),
+    results = map(models, broom::tidy)
+  ) %>% 
+  select(city_state, results) %>% 
+  unnest(results) %>% 
+  mutate(
+    OR = exp(estimate),
+    CI_lower = exp(estimate - 1.96 * std.error),
+    CI_upper = exp(estimate + 1.96 * std.error)
+  ) %>% 
+  select(city_state, term, OR, starts_with("CI")) 
+```
+
+
+
+
+
+
+
+
 
 
 
