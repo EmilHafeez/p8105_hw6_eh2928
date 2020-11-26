@@ -158,7 +158,7 @@ AIC(fit)
 ```
 
 Plot the model residuals vs fitted values
-```{r plot cache = TRUE}
+```{r plot, cache = TRUE}
 birthweight_df %>% 
   add_residuals(fit) %>% 
   add_predictions(fit) %>% 
@@ -249,8 +249,21 @@ birthweight_df %>%
 
 
 # Problem Three
-```{r}
-
+First, we've imported the data. 
+```{r include = F}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
 ```
+We aim to use a simple linear regression where tmax is the response and tmin is the predictor, and using 5000 bootstrap samples we will plot the distribution of the sample coefficient of determindation and the log of the regression coefficients estimators.
+
 
 
