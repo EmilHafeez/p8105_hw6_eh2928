@@ -136,6 +136,13 @@ summary(birthweight_df)
 
 
 Fit a regression model and plot the model residuals against fitted values, using the original data frame.
+```{r include = F}
+birthweight_df %>% 
+  ggplot(aes(x = bwt)) + 
+  geom_histogram()
+```
+
+
 ```{r}
 birthweight_df =
   birthweight_df %>% 
@@ -143,19 +150,15 @@ birthweight_df =
     bwt_cp = (bwt > 2000) * (bwt - 2000)
   )
 
-fit = lm(bwt ~ bhead + blength + blength*bhead + babysex + smoken + fincome + momage + bwt_cp, data = birthweight_df)
+fit = lm(bwt ~ bhead + blength + blength*bhead + babysex + smoken + fincome + momage, data = birthweight_df)
 summary(fit)
 AIC(fit)
+
+
 ```
 
 Plot the model residuals vs fitted values
 ```{r plot cache = TRUE}
-birthweight_df =
-  birthweight_df %>% 
-  mutate(
-    bwt_cp = (bwt > 2000) * (bwt - 2000)
-  )
-
 birthweight_df %>% 
   add_residuals(fit) %>% 
   add_predictions(fit) %>% 
@@ -167,15 +170,13 @@ birthweight_df %>%
   add_predictions(fit) %>% 
   ggplot(aes(x = bwt, y = resid, alpha = 0.1, color = "blue")) + 
   geom_point()
-
-# add a boxplot??
 ```
+Let me briefly comment on model construction. My approach was primarily driven by a hypothesized structure for the factors that underlie birthweight. I first examined a histogram of birthweight and noticed that there are very low birthweights in the sample, not likely due to data collection errors but more to troubling and dangerous circumstances. Then, I applied this observation with information I obtained by first comparing the two given models (as mentioned in live lecture, to make the problem workflow more efficient). By first determining that the data may not follow a linearly predictable trend for the whole birthweight distribution, I used the lecture example to make a simple cutpoint, and added it to concepts which (as a lay person) struck me as relevant for birthweight, from the most proximal of factors (head circumference and body length) to more distal (considering income as a proxy for structural and resource factors that may influence birthweight) Then, I compared this model's predictors and AIC to the given models, and decided to proceed.
 
-Let's get model comparison working with the two given models
-
+Let's compare the models. First, generate the cross validation dataframe.
 ```{r cache = TRUE}
 cv_df = 
-  crossv_mc(birthweight_df, 1000) %>% 
+  crossv_mc(birthweight_df, 100) %>% 
   mutate(
     train = map(train, as_tibble),
     test = map(test, as_tibble))
@@ -184,7 +185,7 @@ cv_df =
 #cv_df %>% pull(train) %>% .[[1]] %>% as_tibble
 ```
 
-Can we create three functions mapped over each of the cross-validation resample objects? Also store the RMSE. 
+Now, can we create three functions mapped over each of the cross-validation resample objects? Let's also store the RMSE. 
 ```{r cache = TRUE}
 cv_df = 
   cv_df %>% 
@@ -198,7 +199,7 @@ cv_df =
     rmse_complex = map2_dbl(complex_model, test, ~rmse(model = .x, data = .y)))
 ```
 
-Let's also plot the RMSEs for each model to compare them
+Let's also plot the RMSEs for each model to compare them based on RMSE. 
 ```{r cache = TRUE}
 cv_df %>% 
   select(starts_with("rmse")) %>% 
@@ -209,12 +210,30 @@ cv_df %>%
     names_prefix = "rmse_") %>% 
   mutate(model = fct_inorder(model)) %>% 
   ggplot(aes(x = model, y = rmse)) + 
-  geom_violin()
+  geom_violin() +
+  scale_y_continuous(breaks = seq(0, 500, 50)) +
+  labs(
+    title = "RMSE for Model Selection",
+    x = "Model",
+    y = "RMSE",
+    caption = "Homework 6: RMSE for three models explaining variation in infant birthweight")
 ```
 
+How about plotting the data?
+```{r}
+simple_model  = lm(bwt ~ bhead + gaweeks, data = birthweight_df)
+pw_model = lm(bwt ~ bhead + blength + blength*bhead + babysex + smoken + fincome + momage + bwt_cp, data = birthweight_df)
+complex_model  = lm(bwt ~ bhead + blength + babysex + bhead*blength + bhead*babysex + blength*babysex + bhead*blength*babysex, data = birthweight_df)
 
-Propose a regression model for birthweight. This model may be based on a hypothesized structure for the factors that underly birthweight, on a data-driven model-building process, or a combination of the two. Describe your modeling process and show a plot of model residuals against fitted values – use add_predictions and add_residuals in making this plot.
 
+birthweight_df %>% 
+  gather_predictions(simple_model, pw_model, complex_model) %>% 
+  mutate(model = fct_inorder(model)) %>% 
+  ggplot(aes(x = bhead, y = bwt)) + 
+  geom_point(alpha = 0.5) + 
+  geom_line(aes(y = pred), color = "red", group = 1) + 
+  facet_wrap(~model)
+```
 
 
 
