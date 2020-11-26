@@ -117,11 +117,25 @@ The results show that in many US cities of the 47 for which data are available, 
 
 # Problem Two
 
-```{r, echo = F}
+```{r, results = "hide", message = F}
 birthweight_df = 
-  read_csv("data/birthweight.csv")
+  read_csv("data/birthweight.csv") %>% 
+  mutate(
+    babysex = as.factor(babysex),
+    frace = as.factor(frace),
+    mrace = as.factor(mrace)
+  ) %>% 
+  ungroup() %>% 
+  select(bwt, babysex, bhead, blength, gaweeks, malform, ppbmi, ppwt, delwt, wtgain, mheight, momage, mrace, menarche, frace, fincome, parity, pnumlbw, pnumsga, smoken)
+summary(birthweight_df)
+```
 
 
+Let's get model comparison working with the two given models
+
+```{r}
+cv_df = 
+  crossv_mc(birthweight_df, 50) 
 ```
 
 
